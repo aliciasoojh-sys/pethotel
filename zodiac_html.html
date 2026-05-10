@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>星座性格分析仪</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f7f7f5; color: #1a1a1a; min-height: 100vh; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 2rem 1rem; }
+  h1 { font-size: 22px; font-weight: 500; margin-bottom: 4px; }
+  .subtitle { font-size: 14px; color: #888; margin-bottom: 1.5rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .zcard { background: #fff; border: 0.5px solid #e0e0dc; border-radius: 12px; padding: 12px 8px; cursor: pointer; text-align: center; transition: border 0.2s, background 0.2s; }
+  .zcard:hover { background: #f3f3f0; }
+  .zcard.active { background: #f3f3f0; }
+  .zcard .emoji { font-size: 22px; margin-bottom: 4px; }
+  .zcard .name { font-size: 13px; font-weight: 500; }
+  .zcard .date { font-size: 11px; color: #aaa; margin-top: 2px; }
+  .loading { text-align: center; padding: 2rem; color: #888; font-size: 14px; }
+  .loading .big { font-size: 32px; margin-bottom: 8px; }
+  .result { display: flex; flex-direction: column; gap: 12px; }
+  .card { background: #fff; border: 0.5px solid #e0e0dc; border-radius: 12px; padding: 1.1rem 1.25rem; }
+  .header-card { border-left: 3px solid #666; }
+  .card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .card-top .big-emoji { font-size: 32px; }
+  .card-top .zname { font-size: 18px; font-weight: 500; }
+  .card-top .zmeta { font-size: 12px; color: #888; margin-top: 2px; }
+  .keyword-badge { margin-left: auto; font-size: 12px; padding: 4px 10px; border-radius: 8px; background: #f3f3f0; color: #666; white-space: nowrap; }
+  .core-text { font-size: 14px; line-height: 1.7; color: #1a1a1a; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .section-label { font-size: 12px; color: #888; font-weight: 500; margin-bottom: 10px; }
+  .item { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+  .item .dot { font-size: 14px; margin-top: 1px; flex-shrink: 0; }
+  .item span { font-size: 13px; line-height: 1.5; }
+  .advice-card { background: #f7f7f5; display: flex; gap: 10px; align-items: flex-start; }
+  .advice-card .star { font-size: 18px; margin-top: 1px; }
+  .advice-text { font-size: 14px; line-height: 1.7; font-style: italic; }
+  .hidden { display: none; }
+  @media (max-width: 400px) { .two-col { grid-template-columns: 1fr; } .keyword-badge { display: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>星座性格分析仪</h1>
+  <p class="subtitle">选择你的星座，获取专属性格解析</p>
+
+  <div class="grid" id="grid"></div>
+  <div id="loading" class="loading hidden"></div>
+  <div id="result" class="result hidden"></div>
+</div>
+
+<script>
+const zodiacs = [
+  { name:"白羊座", emoji:"♈", date:"3/21–4/19", el:"火" },
+  { name:"金牛座", emoji:"♉", date:"4/20–5/20", el:"土" },
+  { name:"双子座", emoji:"♊", date:"5/21–6/20", el:"风" },
+  { name:"巨蟹座", emoji:"♋", date:"6/21–7/22", el:"水" },
+  { name:"狮子座", emoji:"♌", date:"7/23–8/22", el:"火" },
+  { name:"处女座", emoji:"♍", date:"8/23–9/22", el:"土" },
+  { name:"天秤座", emoji:"♎", date:"9/23–10/22", el:"风" },
+  { name:"天蝎座", emoji:"♏", date:"10/23–11/21", el:"水" },
+  { name:"射手座", emoji:"♐", date:"11/22–12/21", el:"火" },
+  { name:"摩羯座", emoji:"♑", date:"12/22–1/19", el:"土" },
+  { name:"水瓶座", emoji:"♒", date:"1/20–2/18", el:"风" },
+  { name:"双鱼座", emoji:"♓", date:"2/19–3/20", el:"水" },
+];
+const elColor = { 火:"#c0392b", 土:"#8b6914", 风:"#2980b9", 水:"#1a7a5e" };
+
+const grid = document.getElementById("grid");
+const loadingEl = document.getElementById("loading");
+const resultEl = document.getElementById("result");
+
+zodiacs.forEach(z => {
+  const btn = document.createElement("div");
+  btn.className = "zcard";
+  btn.dataset.name = z.name;
+  btn.innerHTML = `<div class="emoji">${z.emoji}</div><div class="name">${z.name}</div><div class="date">${z.date}</div>`;
+  btn.onclick = () => analyze(z, btn);
+  grid.appendChild(btn);
+});
+
+async function analyze(z, btn) {
+  document.querySelectorAll(".zcard").forEach(c => { c.classList.remove("active"); c.style.borderColor = ""; c.style.borderWidth = ""; });
+  btn.classList.add("active");
+  btn.style.borderColor = elColor[z.el];
+  btn.style.borderWidth = "1.5px";
+
+  resultEl.classList.add("hidden");
+  loadingEl.classList.remove("hidden");
+  loadingEl.innerHTML = `<div class="big">${z.emoji}</div>正在分析 ${z.name} 的性格特质…`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: `你是专业星座分析师。请对"${z.name}"（${z.date}，${z.el}象星座）进行深度性格分析。严格返回JSON，不要Markdown代码块或其他文字：{"keyword":"三个核心关键词用·分隔","core":"核心性格2-3句","strengths":["优势1","优势2","优势3"],"weaknesses":["弱点1","弱点2","弱点3"],"relationship":"人际关系风格2句","advice":"一句人生建议"}` }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content.map(i => i.text||"").join("");
+    const parsed = JSON.parse(text.replace(/```json|```/g,"").trim());
+    render(z, parsed);
+  } catch(e) {
+    loadingEl.innerHTML = `<p style="color:#c0392b;font-size:14px">分析失败，请重试。</p>`;
+  }
+}
+
+function render(z, d) {
+  const c = elColor[z.el];
+  loadingEl.classList.add("hidden");
+  resultEl.classList.remove("hidden");
+  resultEl.innerHTML = `
+    <div class="card header-card" style="border-left-color:${c}">
+      <div class="card-top">
+        <span class="big-emoji">${z.emoji}</span>
+        <div><div class="zname">${z.name}</div><div class="zmeta">${z.date} · ${z.el}象星座</div></div>
+        <div class="keyword-badge">${d.keyword}</div>
+      </div>
+      <p class="core-text">${d.core}</p>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <div class="section-label">优势</div>
+        ${d.strengths.map(s=>`<div class="item"><span class="dot" style="color:${c}">✦</span><span>${s}</span></div>`).join("")}
+      </div>
+      <div class="card">
+        <div class="section-label">弱点</div>
+        ${d.weaknesses.map(w=>`<div class="item"><span class="dot" style="color:#aaa">◇</span><span>${w}</span></div>`).join("")}
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-label">人际关系</div>
+      <p class="core-text">${d.relationship}</p>
+    </div>
+    <div class="card advice-card">
+      <span class="star">✨</span>
+      <div>
+        <div class="section-label" style="margin-bottom:4px">人生建议</div>
+        <p class="advice-text">"${d.advice}"</p>
+      </div>
+    </div>`;
+}
+</script>
+</body>
+</html>
